@@ -13,6 +13,7 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const morgan = require('morgan');
+const { InventoryError, errorHandler } = require('./error-handler');
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -196,6 +197,9 @@ app.post('/sync/push', (req, res) => {
 
 // Quick health check
 app.get('/health', (req, res) => res.json({ status: 'ok', now: new Date().toISOString() }));
+
+// Error handling middleware (must be last)
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
