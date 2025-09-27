@@ -52,3 +52,4 @@ Notas
 -----
 - Este prototipo es deliberadamente sencillo: la intención es demostrar las decisiones arquitectónicas y los mecanismos clave (optimistic locking, idempotency, transacciones locales).
 - Para producción se recomienda: migrar event bus a Kafka/Kinesis, usar Redis para caché de lectura, añadir TLS/JWT, y desplegar servicios en contenedores + autoescalado.
+- Mas ejemplos en postman-examples.md
