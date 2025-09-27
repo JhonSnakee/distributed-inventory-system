@@ -1,34 +1,66 @@
 # Distributed Inventory Management System — Prototype
 
-Resumen rápido
---------------
-Este repositorio contiene una **propuesta técnica** y una **implementación prototipo** (simplificada) de un sistema de gestión de inventario distribuido pensado para minimizar inconsistencias, reducir latencia en actualizaciones y mejorar observabilidad y tolerancia a fallos.
+## Quick Overview
+This repository contains a **technical proposal** and **prototype implementation** (simplified) of a distributed inventory management system designed to minimize inconsistencies, reduce update latency, and improve observability and fault tolerance.
 
-Contenido principal
--------------------
-- `src/` - servidor backend prototipo (Node.js + Express) usando SQLite (archivo) como persistencia simulada.
-- `run.md` - instrucciones para ejecutar el prototipo localmente.
-- `prompts.md` - prompts de GenAI que se usaron durante el desarrollo (si aplica).
-- `project-plan.md` - plan corto del proyecto, decisiones arquitectónicas y hitos.
-- `zip` - carpeta donde se genera el zip final (automáticamente durante la entrega).
+## Quick Start
+```bash
+npm install
+npm start
+# Server runs on http://localhost:3000
+```
 
-Arquitectura propuesta (resumen)
---------------------------------
-1. **Modelo**: CQRS + Event Sourcing conceptual.
-   - Escrituras (commands) van a un servicio de *command* que valida y emite eventos de inventario al *event bus* (p. ej. Kafka / Amazon MSK / AWS Kinesis).
-   - Lecturas (queries) son servidas desde réplicas optimizadas (read-models) en cachés distribuidas (p. ej. Redis) por tienda y para la vista global.
-2. **Consistencia**: Se propone **consistencia fuerte para operaciones de stock crítico** (compra, reserva) usando control de concurrencia optimista (version/cas) y confirmación central (coordinator). Para operaciones no críticas (reportes) se permite consistencia eventual.
-3. **Sincronización**: sincronización push desde tiendas hacia el command service con idempotencia y reconciliación periódica en background (compaction / reconciliation).
-4. **Observabilidad**: trazabilidad de eventos, métricas (Prometheus), logs estructurados y trazas (OpenTelemetry).
-5. **Seguridad**: TLS, autenticación basada en JWT, autorización por roles, y cabeceras idempotency-key para idempotencia segura.
+## Main Content
+- `src/` - Backend prototype server (Node.js + Express) using SQLite as simulated persistence
+- `run.md` - Instructions to run the prototype locally
+- `prompts.md` - GenAI prompts used during development
+- `project-plan.md` - Short project plan, architectural decisions and milestones
+- `api-design.md` - Detailed API documentation
+- `tech-stack.md` - Technology choices and GenAI integration
+- `postman-examples.md` - API testing examples
 
-Prototipo
----------
-El prototipo implementa:
-- API REST con endpoints para consultar inventario, ajustar stock y reconciliar/empujar cambios.
-- Persistencia simulada con SQLite (archivo `data/inventory.db`).
-- Mecanismo de control de concurrencia optimista (campo `version`) para evitar sobrescrituras no intencionadas.
-- Idempotencia y reintento básico por `Idempotency-Key` header.
-- Manejo básico de errores y logs.
+## API Endpoints
+- `GET /inventory/{sku}` - Get aggregated inventory across stores
+- `PUT /inventory/{sku}` - Set quantity for SKU in store (idempotent)
+- `POST /inventory/{sku}/adjust` - Adjust quantity with optimistic locking
+- `POST /sync/push` - Batch synchronization from stores
 
-Lee `run.md` para instrucciones rápidas de ejecución y pruebas.
+## Proposed Architecture (Summary)
+1. **Model**: CQRS + Event Sourcing conceptual approach
+   - Writes (commands) go to a *command* service that validates and emits inventory events to *event bus* (e.g. Kafka / Amazon MSK / AWS Kinesis)
+   - Reads (queries) are served from optimized replicas (read-models) in distributed caches (e.g. Redis) per store and for global view
+2. **Consistency**: Proposes **strong consistency for critical stock operations** (purchase, reservation) using optimistic concurrency control (version/cas) and central confirmation (coordinator). For non-critical operations (reports) eventual consistency is allowed
+3. **Synchronization**: Push synchronization from stores to command service with idempotency and periodic background reconciliation (compaction / reconciliation)
+4. **Observability**: Event traceability, metrics (Prometheus), structured logs and traces (OpenTelemetry)
+5. **Security**: TLS, JWT-based authentication, role-based authorization, and idempotency-key headers for safe idempotency
+
+## Implemented Features
+✅ Optimistic concurrency control with version field
+✅ Idempotency support via Idempotency-Key header
+✅ Multi-store inventory management
+✅ Comprehensive error handling
+✅ Automated testing suite
+✅ REST API with proper HTTP status codes
+
+## Prototype Implementation
+The prototype implements:
+- REST API with endpoints to query inventory, adjust stock and reconcile/push changes
+- Simulated persistence with SQLite (file `data/inventory.db`)
+- Optimistic concurrency control mechanism (`version` field) to avoid unintended overwrites
+- Basic idempotency and retry via `Idempotency-Key` header
+- Basic error handling and logging
+
+## Testing
+```bash
+npm test                # Run all tests
+npm run test:coverage   # Run with coverage report
+```
+
+## Production Roadmap
+- Replace SQLite with PostgreSQL/MongoDB
+- Implement Redis for read caching
+- Add JWT authentication
+- Deploy with Docker + Kubernetes
+- Integrate with Kafka/Kinesis for events
+
+Read `run.md` for quick execution and testing instructions.
