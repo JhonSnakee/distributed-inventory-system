@@ -64,3 +64,9 @@ npm run test:coverage   # Run with coverage report
 - Integrate with Kafka/Kinesis for events
 
 Read `run.md` for quick execution and testing instructions.
+
+---
+
+## 📬 Contacto
+
+> Desarrollado con cariño por [@JhonSnakee](https://github.com/JhonSnakee)
