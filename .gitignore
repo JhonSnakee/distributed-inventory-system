@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+
+# Database
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Build output
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Jest cache
+.jest-cache/
+jest_cache/
+
+# Python (scripts/)
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+

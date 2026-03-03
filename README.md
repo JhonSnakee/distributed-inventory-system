@@ -1,72 +1,248 @@
-# Distributed Inventory Management System — Prototype
+# 📦 Distributed Inventory System
 
-## Quick Overview
-This repository contains a **technical proposal** and **prototype implementation** (simplified) of a distributed inventory management system designed to minimize inconsistencies, reduce update latency, and improve observability and fault tolerance.
-
-## Quick Start
-```bash
-npm install
-npm start
-# Server runs on http://localhost:3000
-```
-
-## Main Content
-- `src/` - Backend prototype server (Node.js + Express) using SQLite as simulated persistence
-- `run.md` - Instructions to run the prototype locally
-- `prompts.md` - GenAI prompts used during development
-- `project-plan.md` - Short project plan, architectural decisions and milestones
-- `api-design.md` - Detailed API documentation
-- `tech-stack.md` - Technology choices and GenAI integration
-- `postman-examples.md` - API testing examples
-
-## API Endpoints
-- `GET /inventory/{sku}` - Get aggregated inventory across stores
-- `PUT /inventory/{sku}` - Set quantity for SKU in store (idempotent)
-- `POST /inventory/{sku}/adjust` - Adjust quantity with optimistic locking
-- `POST /sync/push` - Batch synchronization from stores
-
-## Proposed Architecture (Summary)
-1. **Model**: CQRS + Event Sourcing conceptual approach
-   - Writes (commands) go to a *command* service that validates and emits inventory events to *event bus* (e.g. Kafka / Amazon MSK / AWS Kinesis)
-   - Reads (queries) are served from optimized replicas (read-models) in distributed caches (e.g. Redis) per store and for global view
-2. **Consistency**: Proposes **strong consistency for critical stock operations** (purchase, reservation) using optimistic concurrency control (version/cas) and central confirmation (coordinator). For non-critical operations (reports) eventual consistency is allowed
-3. **Synchronization**: Push synchronization from stores to command service with idempotency and periodic background reconciliation (compaction / reconciliation)
-4. **Observability**: Event traceability, metrics (Prometheus), structured logs and traces (OpenTelemetry)
-5. **Security**: TLS, JWT-based authentication, role-based authorization, and idempotency-key headers for safe idempotency
-
-## Implemented Features
-✅ Optimistic concurrency control with version field
-✅ Idempotency support via Idempotency-Key header
-✅ Multi-store inventory management
-✅ Comprehensive error handling
-✅ Automated testing suite
-✅ REST API with proper HTTP status codes
-
-## Prototype Implementation
-The prototype implements:
-- REST API with endpoints to query inventory, adjust stock and reconcile/push changes
-- Simulated persistence with SQLite (file `data/inventory.db`)
-- Optimistic concurrency control mechanism (`version` field) to avoid unintended overwrites
-- Basic idempotency and retry via `Idempotency-Key` header
-- Basic error handling and logging
-
-## Testing
-```bash
-npm test                # Run all tests
-npm run test:coverage   # Run with coverage report
-```
-
-## Production Roadmap
-- Replace SQLite with PostgreSQL/MongoDB
-- Implement Redis for read caching
-- Add JWT authentication
-- Deploy with Docker + Kubernetes
-- Integrate with Kafka/Kinesis for events
-
-Read `run.md` for quick execution and testing instructions.
+A backend prototype for a **distributed inventory management system** built with Node.js, Express and SQLite. It demonstrates key distributed systems concepts such as optimistic locking, idempotency, store-level partitioning and batch synchronization.
 
 ---
 
-## 📬 Contacto
+## 🚀 Features
+
+- **Optimistic Locking** — Version-based concurrency control to prevent lost updates in concurrent environments.
+- **Idempotency** — All write operations support `Idempotency-Key` header for safe retries on network failures.
+- **Store-level Partitioning** — Each SKU tracks inventory per store independently.
+- **Batch Synchronization** — Bulk push endpoint to reconcile inventory from multiple stores.
+- **ACID Transactions** — SQLite transactions ensure data integrity on all writes.
+- **Centralized Error Handling** — Structured JSON error responses with meaningful codes and timestamps.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer        | Technology                          |
+|--------------|-------------------------------------|
+| Runtime      | Node.js 18+                         |
+| Framework    | Express.js                          |
+| Database     | SQLite via `better-sqlite3`         |
+| Testing      | Jest + Supertest                    |
+| Logging      | Morgan                              |
+| ID Generation| UUID v4                             |
+
+---
+
+## 📁 Project Structure
+
+```
+distributed-inventory-system/
+├── src/
+│   ├── server.js               # Main application server & API routes
+│   └── error-handler.js        # Centralized error handling middleware
+├── tests/
+│   ├── inventory.test.js       # Core API tests
+│   └── error-handling.test.js  # Error handling tests
+├── data/
+│   └── inventory.db            # SQLite database (auto-created on first run)
+├── scripts/
+│   └── simulate_concurrent_requests.py  # Concurrency simulation script
+├── api-design.md
+├── setup-instructions.md
+├── postman-examples.md
+└── package.json
+```
+
+---
+
+## ⚡ Getting Started
+
+### Prerequisites
+
+- **Node.js 18+** and **npm**
+- Git (optional)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <repository-url> distributed-inventory-system
+cd distributed-inventory-system
+
+# Install dependencies
+npm install
+```
+
+### Run the Server
+
+```bash
+npm start
+# Server starts at http://localhost:3000
+```
+
+The SQLite database is created automatically at `data/inventory.db` and seeded with sample data on first run.
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run with coverage report
+npm run test:coverage
+
+# Run in watch mode
+npm run test:watch
+```
+
+---
+
+## 🌐 API Reference
+
+### Base URL
+```
+http://localhost:3000
+```
+
+### Headers
+
+| Header            | Description                                      |
+|-------------------|--------------------------------------------------|
+| `X-Store-Id`      | Identifies the store making the request          |
+| `Idempotency-Key` | Unique key to ensure operation idempotency       |
+| `Content-Type`    | `application/json` (required for POST/PUT)       |
+
+---
+
+### Endpoints
+
+#### `GET /health`
+Health check.
+
+**Response:**
+```json
+{ "status": "ok", "now": "2026-03-02T10:00:00.000Z" }
+```
+
+---
+
+#### `GET /inventory/:sku`
+Get aggregated inventory across all stores for a given SKU.
+
+**Response:**
+```json
+{
+  "sku": "sku-123",
+  "total": 15,
+  "per_store": [
+    { "store_id": "store-1", "quantity": 10, "version": 1, "last_updated": "..." },
+    { "store_id": "store-2", "quantity": 5, "version": 1, "last_updated": "..." }
+  ]
+}
+```
+
+---
+
+#### `PUT /inventory/:sku`
+Set the quantity for a SKU in a specific store. Supports idempotency.
+
+**Headers:** `X-Store-Id`, `Idempotency-Key` (optional)
+
+**Body:**
+```json
+{ "quantity": 15 }
+```
+
+**Response:**
+```json
+{ "sku": "sku-123", "store_id": "store-1", "quantity": 15, "version": 2, "last_updated": "..." }
+```
+
+---
+
+#### `POST /inventory/:sku/adjust`
+Adjust inventory by a delta value using **optimistic locking**. The client must provide `expectedVersion` to prevent lost updates.
+
+**Headers:** `X-Store-Id`, `Idempotency-Key` (optional)
+
+**Body:**
+```json
+{ "delta": -3, "expectedVersion": 1 }
+```
+
+**Response:**
+```json
+{ "sku": "sku-123", "store_id": "store-1", "quantity": 7, "version": 2, "last_updated": "..." }
+```
+
+**Error — Version Mismatch (409):**
+```json
+{ "error": "version_mismatch", "currentVersion": 3 }
+```
+
+**Error — Insufficient Stock (400):**
+```json
+{ "error": "insufficient_stock" }
+```
+
+---
+
+#### `POST /sync/push`
+Batch synchronization — push multiple SKU quantities from a store to the central system. Supports idempotency.
+
+**Headers:** `Idempotency-Key` (optional)
+
+**Body:**
+```json
+[
+  { "sku": "sku-123", "quantity": 20, "store_id": "store-1" },
+  { "sku": "sku-456", "quantity": 8,  "store_id": "store-1" }
+]
+```
+
+**Response:**
+```json
+{ "changed": [ { "sku": "sku-123", "store_id": "store-1", "quantity": 20, "version": 3, "last_updated": "..." } ] }
+```
+
+---
+
+## 🏗️ Architecture & Design Decisions
+
+### Consistency over Availability
+Critical stock operations prioritize **strong consistency**. When `expectedVersion` mismatches (concurrent update detected), the request is rejected with `409 Conflict` so the client can re-fetch and retry with the latest version. This prevents overselling.
+
+### Optimistic Locking
+Each inventory record carries a `version` field that increments on every write. Clients submit the `expectedVersion` they last read; if it no longer matches the database, the update is rejected.
+
+### Idempotency
+Write operations (`PUT`, `POST`) accept an `Idempotency-Key` header. If the same key is seen again, the original response is returned immediately — enabling safe retries after network failures without side effects.
+
+### Store-level Partitioning
+Each `(sku, store_id)` pair is tracked independently, supporting a distributed model where each physical store manages its own stock and syncs periodically to the central system.
+
+---
+
+## 🔄 Concurrency Simulation
+
+A Python script is provided to simulate concurrent requests and observe optimistic locking in action:
+
+```bash
+python scripts/simulate_concurrent_requests.py
+```
+
+---
+
+## 📄 Additional Documentation
+
+| File                    | Description                                  |
+|-------------------------|----------------------------------------------|
+| `api-design.md`         | API design decisions and endpoint overview   |
+| `postman-examples.md`   | Ready-to-use Postman request examples        |
+| `setup-instructions.md` | Detailed setup and configuration guide       |
+| `tech-stack.md`         | Technology choices and GenAI integration     |
+| `project-plan.md`       | Project planning notes                       |
+
+---
+
+## 👤 Autor
 
 > Desarrollado con cariño por [@JhonSnakee](https://github.com/JhonSnakee)
+
